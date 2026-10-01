@@ -1,0 +1,18 @@
+# Build output
+dist/
+*.zip
+
+# Local working files produced by the skill
+routing-log.md
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+.env
