@@ -1,9 +1,10 @@
 # claude-tokenomics-skill
 
-A Claude skill that turns a finished plan into routed work: it breaks the plan
-into tasks, routes each to **Opus**, **Sonnet**, or **Haiku** by complexity and
-cost, delegates execution, then has Opus review every result against its
-acceptance criteria and logs the outcome.
+A Claude skill that turns a finished plan into routed work: it decides whether
+delegating pays at all, breaks the plan into tasks, routes each to **Opus**,
+**Sonnet**, or **Haiku** by complexity and token shape, bundles and delegates
+them without breaking the main session's prompt cache, then has Opus review
+every result against its acceptance criteria and logs the outcome.
 
 Current version: see [`VERSION`](VERSION) · history in [`CHANGELOG.md`](CHANGELOG.md)
 
@@ -11,11 +12,27 @@ Current version: see [`VERSION`](VERSION) · history in [`CHANGELOG.md`](CHANGEL
 
 ```
 skills/tokenomics/SKILL.md   # the skill (frontmatter: name, description)
+skills/tokenomics/reference/economics.md  # prices, cache facts, break-even (loaded on demand)
 agents/worker.md             # Sonnet subagent used by the skill (Claude Code only)
 agents/grunt.md              # Haiku subagent used by the skill (Claude Code only)
 scripts/package.sh           # builds dist/tokenomics-<version>.zip for upload
 VERSION, CHANGELOG.md        # versioning
 ```
+
+## Cost model (why it routes the way it does)
+
+- **Delegation isn't free.** Every subagent starts with a cold cache and pays
+  for its own system prompt, tools, and brief. Small plans, dependent chains,
+  and edits to files already in context run inline in the main session.
+- **Cheaper tiers save on output and new input**, not on re-reading: Opus reads
+  its warm cache at about Sonnet's price. Bulky reading or writing is what's
+  worth handing off, because it also keeps the main context small.
+- **Never switch the main session's model mid-task.** Caches are per model, so
+  `/model` re-writes the whole conversation. Cheaper models run only as subagents.
+- **Bundle work.** Same-tier tasks with shared inputs go to one subagent call;
+  briefs are pointers (paths, line ranges), and reports are ≤ 10 lines.
+
+Numbers and worked examples: [`reference/economics.md`](skills/tokenomics/reference/economics.md).
 
 ---
 
@@ -33,7 +50,7 @@ git checkout v1.0.0   # optional: pin to a released version
 
 1. Build the upload zip (needs `zip`):
    ```bash
-   ./scripts/package.sh        # -> dist/tokenomics-1.0.0.zip
+   ./scripts/package.sh        # -> dist/tokenomics-2.0.0.zip
    ```
    The zip contains a single `tokenomics/` folder with `SKILL.md` at its root,
    which is the shape Claude expects.
@@ -57,7 +74,9 @@ git checkout v1.0.0   # optional: pin to a released version
 ### 4. (Optional) Use it in Claude Code with your enterprise login
 
 Claude Code reads skills and subagents from disk, and here the `worker`/`grunt`
-subagents actually run on Sonnet/Haiku:
+subagents actually run on Sonnet/Haiku. Their frontmatter uses `effort`,
+`tools`, `omitClaudeMd`, and `maxTurns` to keep each spawn's cold prefix small;
+`omitClaudeMd` needs Claude Code v2.1.271 or later (older versions ignore it):
 
 ```bash
 mkdir -p ~/.claude/skills ~/.claude/agents
@@ -70,7 +89,7 @@ Symlinks mean a `git pull` updates Claude Code immediately. (Use `.claude/`
 inside a project instead of `~/.claude/` to scope it to one repo.)
 
 > In claude.ai chat there are no named subagents, so the delegation step runs
-> in-session; the routing table and Opus review still apply.
+> in-session; the delegation gate, routing table, and Opus review still apply.
 
 ### Version reference
 
