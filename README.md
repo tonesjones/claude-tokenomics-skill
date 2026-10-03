@@ -43,14 +43,14 @@ Numbers and worked examples: [`reference/economics.md`](skills/tokenomics/refere
 ```bash
 git clone https://github.com/tonesjones/claude-tokenomics-skill.git
 cd claude-tokenomics-skill
-git checkout v1.0.0   # optional: pin to a released version
+git checkout v2.1.0   # optional: pin to a released version (tags start at v2.1.0)
 ```
 
 ### 2. Import the skill into your enterprise Claude account (claude.ai / desktop)
 
 1. Build the upload zip (needs `zip`):
    ```bash
-   ./scripts/package.sh        # -> dist/tokenomics-2.0.0.zip
+   ./scripts/package.sh        # -> dist/tokenomics-<version>.zip
    ```
    The zip contains a single `tokenomics/` folder with `SKILL.md` at its root,
    which is the shape Claude expects.
@@ -66,7 +66,7 @@ git checkout v1.0.0   # optional: pin to a released version
 
 - Toggle **tokenomics** on in the Skills list.
 - Test it: draft a plan in a chat, then say *"route the plan"*. You should get
-  a routing table (ID / Task / Model / Why / Done when / Depends on).
+  a routing table (ID / Task / Shape / Model / Package / Why / Done when / Touches / Depends on), or a one-line "Inline: …" decision for small plans.
 - To share it with your team, ask an org admin to provision it org-wide from
   the admin Skills settings (if your plan supports that) instead of each person
   uploading it.
@@ -95,7 +95,7 @@ inside a project instead of `~/.claude/` to scope it to one repo.)
 
 | Field | Where |
 |---|---|
-| Installed version | the zip name you uploaded, e.g. `tokenomics-1.0.0.zip` |
+| Installed version | the zip name you uploaded, e.g. `tokenomics-2.1.0.zip` |
 | Latest version | [`VERSION`](VERSION) on `main`, or the repo's Releases/Tags |
 | What changed | [`CHANGELOG.md`](CHANGELOG.md) |
 
@@ -107,7 +107,7 @@ inside a project instead of `~/.claude/` to scope it to one repo.)
 
 ```bash
 cd claude-tokenomics-skill
-git pull origin main             # or: git fetch --tags && git checkout v1.1.0
+git pull origin main             # or: git fetch --tags && git checkout v2.1.0
 cat VERSION                      # confirm the version
 ./scripts/package.sh             # -> dist/tokenomics-<version>.zip
 ```
@@ -124,12 +124,12 @@ replace) the old **tokenomics** entry and upload the new zip. Re-test with
 3. Commit and tag:
    ```bash
    git add -A
-   git commit -m "tokenomics v1.1.0: <summary>"
-   git tag -a v1.1.0 -m "tokenomics v1.1.0"
+   git commit -m "tokenomics vX.Y.Z: <summary>"
+   git tag -a vX.Y.Z -m "tokenomics vX.Y.Z"
    git push origin main --tags
    ```
 4. Optional: create a GitHub Release from the tag and attach
-   `dist/tokenomics-1.1.0.zip`, so the enterprise side can download the zip
+   `dist/tokenomics-X.Y.Z.zip`, so the enterprise side can download the zip
    without cloning.
 
 Keep personal and enterprise copies in sync by treating this repo as the single
