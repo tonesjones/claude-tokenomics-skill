@@ -1,6 +1,6 @@
 ---
 name: tokenomics
-description: After a plan is drafted, decide whether delegation pays, map each task to Opus, Sonnet, or Haiku by difficulty and token shape, bundle and delegate to the matching subagent without breaking the main session's prompt cache, then have Opus review results against acceptance criteria. Use at the end of any planning session or when asked to "route the plan".
+description: After a plan is drafted, decide whether delegation pays, map each task to Opus, Sonnet, or Haiku by difficulty and token shape, bundle and delegate to the matching subagent without breaking the main session's prompt cache, then have Opus review results against acceptance criteria. Use at the end of any planning session or when asked to "route the plan" or run /tokenomics.
 ---
 
 # Tokenomics
@@ -25,6 +25,7 @@ Each task must be independently executable and include:
 - **ID**: T1, T2, …
 - **Description**: one or two sentences
 - **Inputs**: file paths, line ranges, or outputs of other tasks it needs
+- **Touches**: files it will modify
 - **Done when**: concrete, checkable acceptance criteria (tests pass, file exists, output matches spec)
 - **Depends on**: task IDs, if any
 - **Shape**: `read-heavy` (lots of new input), `write-heavy` (lots of output), `reasoning` (small I/O, hard), or `touch-up` (small change to already-loaded context)
@@ -48,19 +49,26 @@ Routing rules:
 ## 3. Bundle into packages
 Group same-tier tasks that share inputs into **one** subagent call (P1, P2, …),
 so the cold start is paid once. Run packages in parallel only when they are
-independent and latency matters; each parallel spawn is another cold start.
+independent (no dependency between them and no overlap in **Touches**) and
+latency matters; each parallel spawn is another cold start.
 
 ## 4. Output the routing table
 Present it before delegating:
 
-| ID | Task | Shape | Model | Package | Why | Done when | Depends on |
-|---|---|---|---|---|---|---|---|
+| ID | Task | Shape | Model | Package | Why | Done when | Touches | Depends on |
+|---|---|---|---|---|---|---|---|---|
 
 Then add a one-line estimate of the share of expected **tokens** (not tasks) on each tier.
+
+Stop and wait for the user to approve or adjust the table when any task is
+flagged (auth, crypto, deletion, migrations) or more than half the expected
+tokens go to subagents, unless the user already said to proceed without
+confirmation. Otherwise continue straight to delegation.
 
 ## 5. Delegate (cache-safe)
 - Never switch the main session's model (`/model`). That cold-starts the whole conversation cache. Cheaper tiers run only as subagents.
 - Opus tasks run in the main session; Sonnet packages go to `worker`, Haiku packages to `grunt`. Respect dependencies.
+- If `worker` or `grunt` isn't defined in this environment, use the general-purpose agent with a model override (`sonnet` / `haiku`) and put the agent's report contract (≤ 10 lines, no diffs or file contents) in the brief.
 - Briefs carry **pointers, not pastes**: paths, line ranges, each task's description and "done when", constraints. Never paste file contents or the whole plan; Opus output is the most expensive token you can spend.
 - Expect compact reports (the agents are told ≤ 10 lines). Everything returned is re-read on every later main-session turn.
 - While a subagent runs, do Opus-tier tasks rather than idling past the cache TTL.
@@ -70,9 +78,14 @@ For each completed task:
 - Objective "done when" (tests, lint, build, file exists): run the check yourself and accept on pass. Don't re-read the diff.
 - Read the diff only for flagged tasks (auth, crypto, deletion, migrations), spot-checks of Haiku output, and integration points between tasks.
 - Mark it **pass**, **fix** (small correction done by Opus), or **escalate** (redo one tier up, with the original brief plus the failure reason).
+- A task escalates at most once. If it fails again, Opus does it in the main session.
 
 ## 7. Log
 Append to `routing-log.md`, one line per task (inline runs get one line for the whole plan):
-`date | task ID | shape | model | package | result (pass/fix/escalate/inline) | notes`
+`date | task ID | shape | model | package | result (pass/fix/escalate/inline) | tokens in/out | notes`
+
+Record token usage when the subagent result reports it (one figure per
+package is fine); otherwise write `n/a`. The session transcripts under
+`~/.claude/projects/` hold per-model usage for later cost analysis.
 
 Escalations are the tuning signal: if a (tier, shape) pair keeps escalating, route it higher next time. If inline runs were consistently trivial, tighten the gate.
