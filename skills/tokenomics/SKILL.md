@@ -20,6 +20,10 @@ routine) and skip steps 2–5 when **any** of these is true:
 
 State the decision in one line, e.g. *"Inline: 2 sequential edits, files already loaded."*
 
+Inline still means using the right skill. If a dedicated skill covers the work
+(`code-review` for a review, `security-review` for a security pass), invoke it
+in the main session instead of doing the work freehand.
+
 ## 1. Break the plan into tasks
 Each task must be independently executable and include:
 - **ID**: T1, T2, …

@@ -1,5 +1,8 @@
 # claude-tokenomics-skill
 
+> **Moved:** tokenomics and the `worker`/`grunt` agents now live in [tonesjones/tstack](https://github.com/tonesjones/tstack). This repo is archived and kept for history.
+
+
 A Claude skill that turns a finished plan into routed work: it decides whether
 delegating pays at all, breaks the plan into tasks, routes each to **Opus**,
 **Sonnet**, or **Haiku** by complexity and token shape, bundles and delegates
